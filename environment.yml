@@ -17,7 +17,7 @@ dependencies:
   - cffi=1.15.1
   - charset-normalizer=2.0.4
   - contourpy=1.0.5
-  - cryptography=38.0.4
+  - cryptography=39.0.1
   - decorator=5.1.1
   - executing=0.8.3
   - freetype=2.12.1
