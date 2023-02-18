@@ -8,6 +8,7 @@ from bokeh.plotting import figure, curdoc
 import numpy as np
 from pandas import to_datetime, DatetimeIndex, Timestamp
 import requests
+from requests.exceptions import ConnectionError, ConnectTimeout
 from speedtest import Speedtest, ConfigRetrievalError
 
 from datetime import datetime
@@ -56,8 +57,8 @@ def ping(address: str) -> float:
     """
     try:
         response = requests.get('http://' + address, timeout=1)  # ping address
-    except requests.exceptions.ConnectTimeout:
-        return np.nan
+    except (ConnectionError, ConnectTimeout):
+        return 0.
     pingtime = response.elapsed.total_seconds() * 1000.  # ping time in ms
     return pingtime
 
@@ -105,27 +106,27 @@ pingsource = ColumnDataSource({'Time': DatetimeIndex([_t, ]),
 # figure formatting
 # speed plot
 print('Creating Plot')
-p = figure(x_axis_type='datetime', sizing_mode='stretch_width')  # create speed plot
+p = figure(x_axis_type='datetime', sizing_mode='stretch_width', height=360)  # create speed plot
 p.xaxis.formatter = DatetimeTickFormatter(microseconds='%I:%M %p',
                                           milliseconds='%I:%M %p', seconds='%I:%M %p', minsec='%I:%M %p',
                                           minutes='%I:%M %p', hourmin='%I:%M %p', hours='%I:%M %p',
                                           days='%d-%b', months='%b/%Y')
 p.xaxis.axis_label = 'Time'
 p.yaxis.axis_label = 'Speed [MB/S]'
-p.xaxis.axis_label_text_font_size = '4em'
-p.yaxis.axis_label_text_font_size = '3em'
+p.xaxis.axis_label_text_font_size = '2em'
+p.yaxis.axis_label_text_font_size = '2em'
 p.xaxis.major_label_text_font_size = '2em'
 p.yaxis.major_label_text_font_size = '2em'
 # ping plot
-p2 = figure(x_axis_type='datetime', sizing_mode='stretch_width', x_range=p.x_range)  # create ping plot
+p2 = figure(x_axis_type='datetime', sizing_mode='stretch_width', height=360, x_range=p.x_range)  # create ping plot
 p2.xaxis.formatter = DatetimeTickFormatter(microseconds='%I:%M %p',
                                            milliseconds='%I:%M %p', seconds='%I:%M %p', minsec='%I:%M %p',
                                            minutes='%I:%M %p', hourmin='%I:%M %p', hours='%I:%M %p',
                                            days='%d-%b', months='%b/%Y')
 p2.xaxis.axis_label = 'Time'
 p2.yaxis.axis_label = 'Response Time [ms]'
-p2.xaxis.axis_label_text_font_size = '4em'
-p2.yaxis.axis_label_text_font_size = '3em'
+p2.xaxis.axis_label_text_font_size = '2em'
+p2.yaxis.axis_label_text_font_size = '2em'
 p2.xaxis.major_label_text_font_size = '2em'
 p2.yaxis.major_label_text_font_size = '2em'
 
