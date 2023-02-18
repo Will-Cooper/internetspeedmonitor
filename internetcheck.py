@@ -1,11 +1,12 @@
 """
-Script to use speedtest-cli to query internet speed every 5 minutes and
+Script to use speedtest-cli to query internet speed every 1--10 mins and
 plot to live updating step plot.
 """
 from bokeh.models import ColumnDataSource, Range1d, HoverTool
 from bokeh.plotting import figure, curdoc
+import numpy as np
 from pandas import to_datetime, DatetimeIndex
-from speedtest import Speedtest
+from speedtest import Speedtest, ConfigRetrievalError
 
 from datetime import datetime
 from time import sleep
@@ -28,7 +29,7 @@ def do_speedtest():
         st = Speedtest()  # do speed test
         dl = st.download() / 1024 ** 2  # in MB from B
         up = st.upload() / 1024 ** 2  # in MB from B
-    except:  # if the connection drops out
+    except ConfigRetrievalError:  # if the connection drops out
         dl = 0.
         up = 0.
         sleep(300)  # try again in 5 minutes
@@ -41,6 +42,8 @@ def callback():
     Python callback event handler
 
     """
+    wait = np.random.uniform(0, 9)  # wait between 0 and 9 minutes
+    sleep(wait * 60)
     t, dl, up = do_speedtest()  # perform speed test
     ts = source.data['Time'].tolist()  # datetimeindex to list
     ts.append(t)
@@ -56,6 +59,7 @@ def callback():
 # initialising
 print('Starting Test')
 _t, _dl, _up = do_speedtest()  # start value
+print(f'Start values: Download = {_dl:.1f} MB, Upload = {_up:.1f} MB')
 source = ColumnDataSource({'Time': DatetimeIndex([_t, ]),  # init CDS
                            'Download': [_dl, ], 'Upload': [_up, ]})
 
@@ -81,5 +85,5 @@ p.legend.label_text_font_size = '1.5em'
 doc = curdoc()
 doc.add_root(p)
 print('Waiting for callbacks')
-doc.add_periodic_callback(callback, 300000)  # test internet every 5 mins
+doc.add_periodic_callback(callback, 60000)  # try callback every minute
 doc.title = 'Internet Check'
