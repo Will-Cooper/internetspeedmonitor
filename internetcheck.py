@@ -41,7 +41,7 @@ def do_speedtest() -> Tuple[Timestamp, float, float]:
     return t, dl, up
 
 
-def ping(address: str) -> float:
+def ping(address: str, nattempts: int = 5) -> float:
     """
     Pings a given address
 
@@ -49,17 +49,28 @@ def ping(address: str) -> float:
     ----------
     address
         The resolvable web address
+    nattempts
+        Number of attempts when pinging
 
     Returns
     -------
     pingtime
-        Time taken for ping in milliseconds
+        Mean time taken for ping in milliseconds
     """
-    try:
-        response = requests.get('http://' + address, timeout=1)  # ping address
-    except (ConnectionError, ConnectTimeout):
-        return 0.
-    pingtime = response.elapsed.total_seconds() * 1000.  # ping time in ms
+    i = 0
+    pingtimes = np.full(nattempts, np.nan)
+    while i < nattempts:
+        try:
+            response = requests.get('http://' + address, timeout=1)  # ping address
+            pingtime = response.elapsed.total_seconds() * 1000.  # ping time in ms
+        except (ConnectionError, ConnectTimeout):  # if failure
+            pingtime = np.nan  # set to nan
+        pingtimes[i] = pingtime
+        i += 1
+    if np.all(np.isnan(pingtimes)):  # check all attempts for nans
+        pingtime = 0.
+    else:
+        pingtime = np.nanmean(pingtimes)  # get mean value
     return pingtime
 
 
@@ -109,7 +120,7 @@ print('Creating Plot')
 p = figure(x_axis_type='datetime', sizing_mode='stretch_width', height=380)  # create speed plot
 p.xaxis.formatter = DatetimeTickFormatter(microseconds='%I:%M %p',
                                           milliseconds='%I:%M %p', seconds='%I:%M %p', minsec='%I:%M %p',
-                                          minutes='%I:%M %p', hourmin='%I:%M %p', hours='%I:%M %p',
+                                          minutes='%I:%M %p', hourmin='%I:%M %p', hours='%I %p',
                                           days='%d-%b', months='%b/%Y')
 p.xaxis.axis_label = 'Time'
 p.yaxis.axis_label = 'Speed [MB/S]'
@@ -121,7 +132,7 @@ p.yaxis.major_label_text_font_size = '2em'
 p2 = figure(x_axis_type='datetime', sizing_mode='stretch_width', height=380, x_range=p.x_range)  # create ping plot
 p2.xaxis.formatter = DatetimeTickFormatter(microseconds='%I:%M %p',
                                            milliseconds='%I:%M %p', seconds='%I:%M %p', minsec='%I:%M %p',
-                                           minutes='%I:%M %p', hourmin='%I:%M %p', hours='%I:%M %p',
+                                           minutes='%I:%M %p', hourmin='%I:%M %p', hours='%I %p',
                                            days='%d-%b', months='%b/%Y')
 p2.xaxis.axis_label = 'Time'
 p2.yaxis.axis_label = 'Response Time [ms]'
