@@ -38,3 +38,5 @@ will automatically update in your browser.
 ```
 bokeh serve --show internetcheck.py
 ```
+It should appear in a new tab on your browser with the
+url something like `localhost:5006/internetcheck`.
