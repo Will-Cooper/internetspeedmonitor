@@ -3,13 +3,13 @@ Script to use speedtest-cli to query internet speed every 1--10 mins and
 plot to live updating step plot.
 """
 from bokeh.layouts import column
-from bokeh.models import ColumnDataSource, DatetimeTickFormatter
+from bokeh.models import ColumnDataSource, DatetimeTickFormatter, BoxAnnotation
 from bokeh.plotting import figure, curdoc
 import numpy as np
 from pandas import to_datetime, DatetimeIndex, Timestamp
 import requests
 from requests.exceptions import ConnectionError, ConnectTimeout
-from speedtest import Speedtest, ConfigRetrievalError
+from speedtest import Speedtest, ConfigRetrievalError, SpeedtestBestServerFailure
 
 from datetime import datetime
 from time import sleep
@@ -33,7 +33,7 @@ def do_speedtest() -> Tuple[Timestamp, float, float]:
         st = Speedtest()  # do speed test
         dl = st.download() / 1024 ** 2  # in MB from B
         up = st.upload() / 1024 ** 2  # in MB from B
-    except ConfigRetrievalError:  # if the connection drops out
+    except (ConfigRetrievalError, SpeedtestBestServerFailure):  # if the connection drops out
         dl = 0.
         up = 0.
         sleep(300)  # try again in 5 minutes
@@ -106,7 +106,7 @@ pingsource = ColumnDataSource({'Time': DatetimeIndex([_t, ]),
 # figure formatting
 # speed plot
 print('Creating Plot')
-p = figure(x_axis_type='datetime', sizing_mode='stretch_width', height=360)  # create speed plot
+p = figure(x_axis_type='datetime', sizing_mode='stretch_width', height=380)  # create speed plot
 p.xaxis.formatter = DatetimeTickFormatter(microseconds='%I:%M %p',
                                           milliseconds='%I:%M %p', seconds='%I:%M %p', minsec='%I:%M %p',
                                           minutes='%I:%M %p', hourmin='%I:%M %p', hours='%I:%M %p',
@@ -118,7 +118,7 @@ p.yaxis.axis_label_text_font_size = '2em'
 p.xaxis.major_label_text_font_size = '2em'
 p.yaxis.major_label_text_font_size = '2em'
 # ping plot
-p2 = figure(x_axis_type='datetime', sizing_mode='stretch_width', height=360, x_range=p.x_range)  # create ping plot
+p2 = figure(x_axis_type='datetime', sizing_mode='stretch_width', height=380, x_range=p.x_range)  # create ping plot
 p2.xaxis.formatter = DatetimeTickFormatter(microseconds='%I:%M %p',
                                            milliseconds='%I:%M %p', seconds='%I:%M %p', minsec='%I:%M %p',
                                            minutes='%I:%M %p', hourmin='%I:%M %p', hours='%I:%M %p',
@@ -143,10 +143,17 @@ homeline = p2.step(x='Time', y='Home', source=pingsource, legend_label='Home Pin
 googleline = p2.step(x='Time', y='Google', source=pingsource, legend_label='Google Ping',
                      line_color='black', line_width=3, mode='after', line_dash='dashed')  # google ping plot
 p2.legend.label_text_font_size = '1.5em'
+p2.legend.level = 'overlay'
+greenping = BoxAnnotation(bottom=0, top=20, fill_color='chartreuse', fill_alpha=0.5)
+amberping = BoxAnnotation(bottom=20, top=100, fill_color='gold', fill_alpha=0.5)
+redping = BoxAnnotation(bottom=100, fill_color='tomato', fill_alpha=0.45)
+p2.add_layout(greenping)
+p2.add_layout(amberping)
+p2.add_layout(redping)
 
 # python server side
 doc = curdoc()
 doc.add_root(column([p, p2], sizing_mode='stretch_width'))
 print('Waiting for callbacks')
-doc.add_periodic_callback(callback, 10000)  # try callback every 10 seconds
+doc.add_periodic_callback(callback, 1000)  # try callback every second
 doc.title = 'Internet Check'
