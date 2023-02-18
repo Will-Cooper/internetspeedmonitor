@@ -2,7 +2,7 @@
 Script to use speedtest-cli to query internet speed every 1--10 mins and
 plot to live updating step plot.
 """
-from bokeh.models import ColumnDataSource, Range1d, HoverTool
+from bokeh.models import ColumnDataSource, DatetimeTickFormatter
 from bokeh.plotting import figure, curdoc
 import numpy as np
 from pandas import to_datetime, DatetimeIndex
@@ -43,6 +43,7 @@ def callback():
 
     """
     wait = np.random.uniform(0, 9)  # wait between 0 and 9 minutes
+    print(f'Next ping in {wait:.1f} mins')
     sleep(wait * 60)
     t, dl, up = do_speedtest()  # perform speed test
     ts = source.data['Time'].tolist()  # datetimeindex to list
@@ -52,7 +53,7 @@ def callback():
     ups = source.data['Upload']
     ups.append(up)
     source.data = {'Time': DatetimeIndex(ts),
-                   'Download': dls, 'Upload': ups}  # update source data
+        'Download': dls, 'Upload': ups}  # update source data
     return
 
 
@@ -61,12 +62,15 @@ print('Starting Test')
 _t, _dl, _up = do_speedtest()  # start value
 print(f'Start values: Download = {_dl:.1f} MB, Upload = {_up:.1f} MB')
 source = ColumnDataSource({'Time': DatetimeIndex([_t, ]),  # init CDS
-                           'Download': [_dl, ], 'Upload': [_up, ]})
+    'Download': [_dl, ], 'Upload': [_up, ]})
 
 # figure formatting
 print('Creating Plot')
 p = figure(x_axis_type='datetime', sizing_mode='stretch_width')  # create plot
-p.y_range = Range1d(0, 60)  # set range to be between 0 and 60 MB
+p.xaxis.formatter = DatetimeTickFormatter(microseconds='%I:%M %p',
+    milliseconds='%I:%M %p', seconds='%I:%M %p', minsec='%I:%M %p',
+    minutes='%I:%M %p', hourmin='%I:%M %p', hours='%I:%M %p',
+    days='%d-%b', months='%b/%Y')
 p.xaxis.axis_label = 'Time'
 p.yaxis.axis_label = 'Speed [MB]'
 p.xaxis.axis_label_text_font_size = '4em'
@@ -76,9 +80,9 @@ p.yaxis.major_label_text_font_size = '2em'
 
 # plotting
 line = p.step(x='Time', y='Download', source=source, legend_label='Download',
-              line_color='blue', line_width=3, mode='after')  # download plot
+    line_color='blue', line_width=3, mode='after')  # download plot
 upline = p.step(x='Time', y='Upload', source=source, legend_label='Upload',
-                line_color='orange', line_width=3, mode='after')  # upload
+    line_color='orange', line_width=3, mode='after')  # upload plot
 p.legend.label_text_font_size = '1.5em'
 
 # python server side
