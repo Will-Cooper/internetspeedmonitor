@@ -8,7 +8,7 @@ from bokeh.plotting import figure, curdoc
 import numpy as np
 from pandas import to_datetime, DatetimeIndex, Timestamp
 import requests
-from requests.exceptions import ConnectionError, ConnectTimeout
+from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 from speedtest import Speedtest, ConfigRetrievalError, SpeedtestBestServerFailure
 
 from datetime import datetime
@@ -63,7 +63,7 @@ def ping(address: str, nattempts: int = 5) -> float:
         try:
             response = requests.get('http://' + address, timeout=1)  # ping address
             pingtime = response.elapsed.total_seconds() * 1000.  # ping time in ms
-        except (ConnectionError, ConnectTimeout):  # if failure
+        except (ConnectionError, ConnectTimeout, ReadTimeout):  # if failure
             pingtime = np.nan  # set to nan
         pingtimes[i] = pingtime
         i += 1
